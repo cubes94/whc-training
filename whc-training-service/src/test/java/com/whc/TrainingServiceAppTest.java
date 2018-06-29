@@ -33,4 +33,5 @@ public class TrainingServiceAppTest {
     public void test() {
         log.info("adwa");
     }
+
 }
