@@ -6,6 +6,7 @@ import com.whc.training.service.dict.domain.dto.QueryDictAreaDTO;
 import com.whc.training.service.dict.domain.vo.DictAreaVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -55,5 +56,11 @@ public class DictCommonServiceImpl {
         QueryDictAreaDTO queryDictAreaDTO = new QueryDictAreaDTO();
         queryDictAreaDTO.setParentCode(parentCode);
         return this.listDictArea(queryDictAreaDTO);
+    }
+
+    @Retryable(value = Exception.class, maxAttempts = 10)
+    public Integer getI() {
+        System.out.println("----------------------------");
+        throw new RuntimeException("1");
     }
 }

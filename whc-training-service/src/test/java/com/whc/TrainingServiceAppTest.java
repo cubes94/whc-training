@@ -1,5 +1,6 @@
 package com.whc;
 
+import com.whc.training.api.dict.service.IDictService;
 import com.whc.training.service.TrainingServiceApp;
 import com.whc.training.service.config.db.properties.PrimaryDataSourceProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -29,8 +30,12 @@ public class TrainingServiceAppTest {
     @Autowired
     private DataSource primaryDataSource;
 
+    @Autowired
+    private IDictService dictService;
+
     @Test
     public void test() {
+        dictService.getDictAreaChildrenWithParentByParentCode("00");
         log.info("adwa");
     }
 
