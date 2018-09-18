@@ -7,8 +7,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * 并发性测试
@@ -29,6 +28,55 @@ public class ConcurrencyTest {
 
         ExecutorService exe = Executors.newFixedThreadPool(10);
         exe.execute(thread);
+        this.afterTerminated(exe);
+    }
+
+    /**
+     * 多线程捕获异常
+     *
+     * @throws Exception e
+     */
+    @Test
+    public void testException() throws Exception {
+        // thread的run方法不抛出任何检查型异常，但是自身又会因为一个异常而被终止，导致这个线程的终结。
+        // 处理方式一，主动try catch处理
+        Thread thread1 = new Thread(() -> {
+            try {
+                System.out.println(3/0);
+            } catch (Throwable e) {
+                log.error("方案一：{}", e.getMessage());
+            }
+        });
+        thread1.start();
+        // 处理方式二，使用UncaughtExceptionHandler检测未捕获的异常，通常结合方案一一起使用
+        Thread thread2 = new Thread(() -> {
+            System.out.println(3/0);
+        });
+        thread2.setUncaughtExceptionHandler((t, ex) ->
+                log.error("方案二: {}", ex.getMessage()));
+        thread2.start();
+        // 处理方式三，为所有的Thread设置一个默认的UncaughtExceptionHandler
+        Thread.setDefaultUncaughtExceptionHandler((t, ex) ->
+                log.error("方案三: {}", ex.getMessage()));
+        Thread thread3 = new Thread(() -> System.out.println(3/0));
+        thread3.start();
+        // 处理方式四，如果采用线程池通过execute方法去捕获异常，需要将异常的捕获封装到Runnable或Callable中
+        Thread thread4 = new Thread(() -> {
+            Thread.currentThread().setUncaughtExceptionHandler((t, ex) ->
+                    log.error("方案四: {}", ex.getMessage()));
+            System.out.println(3/0);
+        });
+        ExecutorService exe = Executors.newFixedThreadPool(10);
+        exe.execute(thread4);
+        // 处理方式五，如果使用submit提交的任务，异常将被Future.get封装在ExecutionException中重新抛出
+        Thread thread5 = new Thread(() -> System.out.println(3/0));
+        Future<?> future = exe.submit(thread5);
+        try {
+            future.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            log.error("方案五: {}", ex.getMessage());
+        }
+        Thread.sleep(1000);
         this.afterTerminated(exe);
     }
 
@@ -165,14 +213,94 @@ public class ConcurrencyTest {
     public void testThreadLocal() throws Exception {
         // ThreadLocal可以让变量只被同一个线程进行读和写操作
         ExecutorService exe = Executors.newFixedThreadPool(2);
-        ThreadLocal<Integer> threadLocal = new ThreadLocal<>();
+        ThreadLocal<Integer> threadLocal = ThreadLocal.withInitial(() -> -1);
         for (int i = 0; i < 10; i++) {
             final int j = i;
             exe.execute(() -> {
                 threadLocal.set(j);
-                log.info("I WILL NEVER CHANGE, I AM {}", j);
+                log.info("I WILL NEVER CHANGE, I AM {}", threadLocal.get());
             });
         }
+        this.afterTerminated(exe);
+        log.info("I WILL NEVER CHANGE, I AM {}", threadLocal.get());
+    }
+
+    @Test
+    public void testFutureTask() throws Exception {
+        FutureTask<Integer> futureTask = new FutureTask<>(() -> {
+            Thread.sleep(1000);
+            return 1;
+        });
+        ExecutorService exe = Executors.newFixedThreadPool(2);
+        exe.execute(futureTask);
+        if (!futureTask.isDone()) {
+            log.info("futureTask is not done");
+        }
+        Integer result = futureTask.get();
+        log.info("result:{}", result);
+    }
+
+    @Test
+    public void testJoin() throws Exception {
+        Thread thread1 = new Thread(() -> {
+            System.out.println("thread1 run...");
+        });
+        Thread thread2 = new Thread(() -> {
+            System.out.println("thread2 run...");
+            thread1.start();
+            try {
+                // 等待子线程运行完之后执行
+                thread1.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("thread2 end...");
+        });
+        Thread thread3 = new Thread(() -> {
+            System.out.println("thread3 run...");
+            thread2.start();
+            try {
+                thread2.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("thread3 end...");
+        });
+        thread3.start();
+        Thread.sleep(2000);
+    }
+
+    @Test
+    public void testBlockingQueue() throws Exception {
+        BlockingDeque<Integer> sharedQueue = new LinkedBlockingDeque<>();
+        int shareMax = 1000;
+        Thread produceThread = new Thread(() -> {
+            try {
+                for (int i = 0; i < 10; i++) {
+                    log.info("produce: {}", i);
+                    sharedQueue.put(i);
+                }
+                sharedQueue.put(shareMax);
+            } catch (InterruptedException e) {
+                log.error("produce error");
+            }
+        });
+        Thread consumeThread = new Thread(() -> {
+           while (true) {
+               try {
+                   int num = sharedQueue.take();
+                   log.info("consume: {}", num);
+                   if (num == shareMax) {
+                       break;
+                   }
+               } catch (InterruptedException e) {
+                   log.error("consume error");
+               }
+           }
+        });
+        ExecutorService exe = Executors.newFixedThreadPool(2);
+        exe.execute(consumeThread);
+        exe.execute(produceThread);
         this.afterTerminated(exe);
     }
 
