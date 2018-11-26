@@ -17,6 +17,7 @@
         <module>config-repo</module>
         <module>whc-crawler-api</module>
         <module>whc-crawler-service</module>
+        <module>whc-web-sample</module>
     </modules>
     <packaging>pom</packaging>
 
