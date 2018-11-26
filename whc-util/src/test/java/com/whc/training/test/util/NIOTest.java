@@ -43,7 +43,7 @@ public class NIOTest extends IOTest {
     public void testChannel() throws Exception {
         // FileChannel 从文件中读写数据。
         // 需要通过InputStream/OutputStream/RandomAccessFile获取FileChannel
-        File file = createFile(FileConstants.FILE_EXT_TXT, mutiData());
+        File file = createFile(FileConstants.FILE_EXT_TXT, multiData());
 
         RandomAccessFile randomAccessFile = new RandomAccessFile(file.getPath(), "rw");
         FileChannel fileChannel = randomAccessFile.getChannel();
@@ -74,7 +74,7 @@ public class NIOTest extends IOTest {
      */
     @Test
     public void testScatter$Gather() throws Exception {
-        File file = createFile(FileConstants.FILE_EXT_TXT, mutiData());
+        File file = createFile(FileConstants.FILE_EXT_TXT, multiData());
         FileInputStream fileInputStream = new FileInputStream(file);
         FileChannel fileInputChannel = fileInputStream.getChannel();
         // Scattering Reads
@@ -105,7 +105,7 @@ public class NIOTest extends IOTest {
      */
     @Test
     public void transferData() throws Exception {
-        File dataFile = createFile(FileConstants.FILE_EXT_SQL, mutiData());
+        File dataFile = createFile(FileConstants.FILE_EXT_SQL, multiData());
         FileInputStream fileInputStream = new FileInputStream(dataFile);
 
         File emptyFile = createFile(FileConstants.FILE_EXT_TXT);
