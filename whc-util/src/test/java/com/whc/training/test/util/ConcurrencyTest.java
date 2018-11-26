@@ -42,7 +42,7 @@ public class ConcurrencyTest {
         // 处理方式一，主动try catch处理
         Thread thread1 = new Thread(() -> {
             try {
-                System.out.println(3/0);
+                System.out.println(3 / 0);
             } catch (Throwable e) {
                 log.error("方案一：{}", e.getMessage());
             }
@@ -50,7 +50,7 @@ public class ConcurrencyTest {
         thread1.start();
         // 处理方式二，使用UncaughtExceptionHandler检测未捕获的异常，通常结合方案一一起使用
         Thread thread2 = new Thread(() -> {
-            System.out.println(3/0);
+            System.out.println(3 / 0);
         });
         thread2.setUncaughtExceptionHandler((t, ex) ->
                 log.error("方案二: {}", ex.getMessage()));
@@ -58,18 +58,18 @@ public class ConcurrencyTest {
         // 处理方式三，为所有的Thread设置一个默认的UncaughtExceptionHandler
         Thread.setDefaultUncaughtExceptionHandler((t, ex) ->
                 log.error("方案三: {}", ex.getMessage()));
-        Thread thread3 = new Thread(() -> System.out.println(3/0));
+        Thread thread3 = new Thread(() -> System.out.println(3 / 0));
         thread3.start();
         // 处理方式四，如果采用线程池通过execute方法去捕获异常，需要将异常的捕获封装到Runnable或Callable中
         Thread thread4 = new Thread(() -> {
             Thread.currentThread().setUncaughtExceptionHandler((t, ex) ->
                     log.error("方案四: {}", ex.getMessage()));
-            System.out.println(3/0);
+            System.out.println(3 / 0);
         });
         ExecutorService exe = Executors.newFixedThreadPool(10);
         exe.execute(thread4);
         // 处理方式五，如果使用submit提交的任务，异常将被Future.get封装在ExecutionException中重新抛出
-        Thread thread5 = new Thread(() -> System.out.println(3/0));
+        Thread thread5 = new Thread(() -> System.out.println(3 / 0));
         Future<?> future = exe.submit(thread5);
         try {
             future.get();
@@ -207,6 +207,8 @@ public class ConcurrencyTest {
     }
 
     /**
+     * ThreadLocal提供线程局部变量，不同线程通过get/set方法访问时都有自己独立初始化的变量副本
+     * <p>
      * {@link ThreadLocal}
      */
     @Test
@@ -225,6 +227,10 @@ public class ConcurrencyTest {
         log.info("I WILL NEVER CHANGE, I AM {}", threadLocal.get());
     }
 
+    /**
+     * 可取消的异步计算
+     * {@link FutureTask}可用于包装{@link Callable}或{@link Runnable}对象
+     */
     @Test
     public void testFutureTask() throws Exception {
         FutureTask<Integer> futureTask = new FutureTask<>(() -> {
@@ -240,6 +246,9 @@ public class ConcurrencyTest {
         log.info("result:{}", result);
     }
 
+    /**
+     * 线程可以通过join方法设置执行顺序
+     */
     @Test
     public void testJoin() throws Exception {
         Thread thread1 = new Thread(() -> {
@@ -270,6 +279,9 @@ public class ConcurrencyTest {
         Thread.sleep(2000);
     }
 
+    /**
+     * {@link BlockingDeque}阻塞队列，FIFO，线程安全，适用于生产-消费
+     */
     @Test
     public void testBlockingQueue() throws Exception {
         BlockingDeque<Integer> sharedQueue = new LinkedBlockingDeque<>();
@@ -286,17 +298,17 @@ public class ConcurrencyTest {
             }
         });
         Thread consumeThread = new Thread(() -> {
-           while (true) {
-               try {
-                   int num = sharedQueue.take();
-                   log.info("consume: {}", num);
-                   if (num == shareMax) {
-                       break;
-                   }
-               } catch (InterruptedException e) {
-                   log.error("consume error");
-               }
-           }
+            while (true) {
+                try {
+                    int num = sharedQueue.take();
+                    log.info("consume: {}", num);
+                    if (num == shareMax) {
+                        break;
+                    }
+                } catch (InterruptedException e) {
+                    log.error("consume error");
+                }
+            }
         });
         ExecutorService exe = Executors.newFixedThreadPool(2);
         exe.execute(consumeThread);
@@ -304,6 +316,39 @@ public class ConcurrencyTest {
         this.afterTerminated(exe);
     }
 
+    /**
+     * {@link CountDownLatch}计数器
+     */
+    @Test
+    public void testCountDownLatch() throws Exception {
+        CountDownLatch countDownLatch = new CountDownLatch(10);
+        ExecutorService exe = Executors.newFixedThreadPool(3);
+        for (int i = 0; i < 10; i++) {
+            final int j = i;
+            exe.execute(() -> {
+                log.info("I AM {}", j);
+                countDownLatch.countDown();
+            });
+        }
+        countDownLatch.await();
+        log.info("计数器：{}", countDownLatch.getCount());
+        this.afterTerminated(exe);
+    }
+
+    /**
+     * 多功能非阻塞的Future，比{@link CountDownLatch}计数器的优点在于不需要关注countDown的逻辑
+     * {@link CompletableFuture}
+     */
+    @Test
+    public void testCompletableFuture() throws Exception {
+        List<CompletableFuture> futures = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            final int j = i;
+            futures.add(CompletableFuture.runAsync(() -> log.info("I AM {}", j)));
+        }
+        CompletableFuture allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        allDoneFuture.get();
+    }
 
     private int count = 0;
 
@@ -343,11 +388,6 @@ public class ConcurrencyTest {
         while (!exe.isTerminated()) {
             Thread.sleep(200);
         }
-    }
-
-
-    @Test
-    public void test() {
-        log.info("{}",2>>1);
+        log.info("exe shutdown");
     }
 }

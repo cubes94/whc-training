@@ -6,7 +6,7 @@
         <entry key="checkstyle-version" value="8.2" />
         <entry key="location-0" value="BUNDLED:(bundled):Sun Checks" />
         <entry key="location-1" value="BUNDLED:(bundled):Google Checks" />
-        <entry key="location-2" value="LOCAL_FILE:D:/work/IntelliJ IDEA 2018.1/whc/bzn_idea_checkstyle.xml:bzn" />
+        <entry key="location-2" value="LOCAL_FILE:D:/work/JetBrains/idea_config/idea_checkstyle.xml:bzn" />
         <entry key="scan-before-checkin" value="false" />
         <entry key="scanscope" value="JavaOnly" />
         <entry key="suppress-errors" value="false" />

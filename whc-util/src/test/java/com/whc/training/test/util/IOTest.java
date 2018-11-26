@@ -396,7 +396,7 @@ public class IOTest {
      */
     @Test
     public void testOtherReader() throws Exception {
-        File txtFile = createFile(FileConstants.FILE_EXT_TXT, mutiData());
+        File txtFile = createFile(FileConstants.FILE_EXT_TXT, multiData());
 
         // LineNumberReader记录了已读取数据行号的BufferedReader
         // 默认情况下，行号从0开始，当LineNumberReader读取到行终止符时，行号会递增（\n \r \n\r）
@@ -413,7 +413,7 @@ public class IOTest {
 
         // StringWriter能够以字符串的形式从Writer中获取写入到其中数据
         StringWriter stringWriter = new StringWriter();
-        stringWriter.write(mutiData());
+        stringWriter.write(multiData());
 
         // StringReader能够将原始字符串转换成Reader
         StringReader stringReader = new StringReader(stringWriter.getBuffer().toString());
@@ -445,7 +445,7 @@ public class IOTest {
 
     protected static String path;
 
-    protected static String mutiData() {
+    protected static String multiData() {
         StringBuilder content = new StringBuilder();
         for (int i = 0; i < 10; i++) {
             content.append(DEFAULT_DATA).append("\n").append(DEFAULT_DATA).append(Integer.MAX_VALUE).append("\n\r");
