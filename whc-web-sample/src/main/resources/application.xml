@@ -13,10 +13,6 @@
 
 	<description>Spring公共配置</description>
 
-	<context:property-placeholder ignore-unresolvable="true"
-		location="classpath:/application.properties"
-		file-encoding="UTF-8" />
-
 	<!-- 允许出现自调用(即类中的一个方法调用该类的另一个方法), 写法需要替换为((XXXService) AopContext.currentProxy()).doSomething(); -->
 	<aop:config expose-proxy="true" />
 
