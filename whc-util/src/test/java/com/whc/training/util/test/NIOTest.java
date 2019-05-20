@@ -1,4 +1,4 @@
-package com.whc.training.test.util;
+package com.whc.training.util.test;
 
 import com.whc.common.constants.FileConstants;
 import lombok.extern.slf4j.Slf4j;

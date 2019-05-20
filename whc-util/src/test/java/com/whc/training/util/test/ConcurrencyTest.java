@@ -1,13 +1,15 @@
-package com.whc.training.test.util;
+package com.whc.training.util.test;
 
 import com.alibaba.fastjson.JSON;
-import com.whc.training.domain.util.MySignal;
+import com.whc.training.util.domain.DelayedCallback;
+import com.whc.training.util.domain.MySignal;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * 并发性测试
@@ -18,6 +20,10 @@ import java.util.concurrent.*;
  */
 @Slf4j
 public class ConcurrencyTest {
+
+    private static List<String> flagList = new CopyOnWriteArrayList<>();
+
+    private static DelayQueue<DelayedCallback> callbackDelayQueue = new DelayQueue<>();
 
     /**
      * 基本测试
@@ -110,7 +116,8 @@ public class ConcurrencyTest {
     }
 
     /**
-     * 同步关键字
+     * 同步关键字 synchronized
+     * 依赖于JVM实现、可重入锁、非公平锁、悲观锁
      */
     @Test
     public void testSynchronized() throws Exception {
@@ -122,6 +129,111 @@ public class ConcurrencyTest {
         this.syncAddCount1(1);
         // 静态方法中的同步块 <=> 等价于addStaticCount
         syncAddStaticCount1(1);
+    }
+
+    /**
+     * {@link LockSupport}
+     */
+    @Test
+    public void testLockSupport() throws Exception {
+        // 延时队列
+        new Thread(() -> {
+            try {
+                while (true) {
+                    callbackDelayQueue.take().getCallback().apply();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        Thread t1 = new Thread(() -> {
+            // 设置线程中断
+            // 线程不会停止, 只是线程的中断标志被设置为true, 中断后再调用wait, join, sleep时, 会抛出InterruptedException, 并且中断标志重新设置为false
+            Thread.currentThread().interrupt();
+            log.info("t1: interrupted? {}", Thread.currentThread().isInterrupted());
+            // 返回中断标志, 并清除中断标志, 重设为false
+            boolean oldInterrupted = Thread.interrupted();
+            log.info("t1: oldInterrupted? {}", oldInterrupted);
+            log.info("t1: interrupted? {}", Thread.currentThread().isInterrupted());
+        });
+        t1.start();
+
+        // 一次中断操作后无论线程调用多少次LockSupport.park(), 程序都不会挂起, 而是正常运行
+        // park源码内判断了当前线程中断标志是true时不会进行操作
+        Thread t2 = new Thread(() -> {
+            while (!flagList.contains("testLockSupport_t2")) {
+            }
+            LockSupport.park();
+            log.info("t2: after 1st park");
+            LockSupport.park();
+            log.info("t2: after 2nd park");
+        });
+        callbackDelayQueue.add(new DelayedCallback(() -> {
+            t2.start();
+            t2.interrupt();
+            flagList.add("testLockSupport_t2");
+        }, 100));
+
+        // 多次调用unpark只会提供一个许可
+        // unpark源码只会修改标志位为1，不会递增
+        Thread t3 = new Thread(() -> {
+            while (!flagList.contains("testLockSupport_t3")) {
+            }
+            LockSupport.park();
+            log.info("t3: after 1st park");
+            LockSupport.park();
+            log.info("t3: after 2nd park");
+        });
+        callbackDelayQueue.add(new DelayedCallback(() -> {
+            t3.start();
+            LockSupport.unpark(t3);
+            LockSupport.unpark(t3);
+            flagList.add("testLockSupport_t3");
+        }, 200));
+
+        // interrupt源码内部会调用一次unpark, 所以之后执行的第一个park操作会修改标志位1->0
+        // 如果清除了中断标志, 第二个park操作才会进行阻塞(见t5)
+        Thread t4 = new Thread(() -> {
+            while (!flagList.contains("testLockSupport_t4")) {
+            }
+            log.info("t4: oldInterrupted? {}", Thread.interrupted());
+            LockSupport.park();
+            log.info("t4: after 1st park");
+        });
+        callbackDelayQueue.add(new DelayedCallback(() -> {
+            t4.start();
+            t4.interrupt();
+            flagList.add("testLockSupport_t4");
+        }, 300));
+
+        // 中断标志清除后, LockSupport.park()把程序挂起
+        Thread t5 = new Thread(() -> {
+            while (!flagList.contains("testLockSupport_t5")) {
+            }
+            LockSupport.park();
+            log.info("t5: after 1st park");
+            log.info("t5: oldInterrupted? {}", Thread.interrupted());
+            LockSupport.park();
+            log.info("t5: after 2nd park");
+        });
+        callbackDelayQueue.add(new DelayedCallback(() -> {
+            t5.start();
+            t5.interrupt();
+            flagList.add("testLockSupport_t5");
+        }, 400));
+        Thread.sleep(2000);
+    }
+
+    /**
+     * 可重入锁：自己可以再次获取自己的内部锁。
+     * 相比于synchronized, 增加了以下几点：等待可中断；可实现公平锁(先等待的线程先获得锁)；可实现选择性通知(锁可以绑定多个条件)
+     *
+     * @see java.util.concurrent.locks.ReentrantLock
+     */
+    @Test
+    public void testReenTrantLock() throws Exception {
+
     }
 
     /**
@@ -172,34 +284,41 @@ public class ConcurrencyTest {
 
         // 生产者
         exe.execute(() -> {
-            synchronized (list) {
-                // 为防止假唤醒，不用if用while，这样的while循环叫做自旋锁（长时间不调用notify方法会十分消耗CPU）
-                while (!list.isEmpty()) {
-                    try {
-                        list.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+            while (this.count < 1000) {
+                synchronized (list) {
+                    // 为防止假唤醒，不用if用while，这样的while循环叫做自旋锁（长时间不调用notify方法会十分消耗CPU）
+                    while (!list.isEmpty()) {
+                        try {
+                            // 调用wait()方法，线程会放弃对象锁，进入等待此对象的等待锁定池
+                            list.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
+                    this.syncAddCount(1);
+                    list.add(this.count);
+                    log.info("生产：{}，集合：{}", this.count, JSON.toJSON(list));
+                    list.notify();
                 }
-                this.syncAddCount(1);
-                list.add(this.count);
-                log.info("生产：{}，集合：{}", this.count, JSON.toJSON(list));
-                list.notify();
             }
         });
         // 消费者
         exe.execute(() -> {
-            synchronized (list) {
-                while (list.isEmpty()) {
-                    try {
-                        list.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+            while (this.count < 1000) {
+                synchronized (list) {
+                    while (list.isEmpty()) {
+                        try {
+                            list.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
+                    while (!list.isEmpty()) {
+                        Integer custom = list.remove(0);
+                        log.info("消费：{}，集合：{}", custom, JSON.toJSON(list));
+                    }
+                    list.notify();
                 }
-                Integer custom = list.remove(0);
-                log.info("消费：{}，集合：{}", custom, JSON.toJSON(list));
-                list.notify();
             }
         });
         this.afterTerminated(exe);
@@ -362,7 +481,7 @@ public class ConcurrencyTest {
         this.count += value;
     }
 
-    private synchronized void syncAddStaticCount(int value) {
+    private static synchronized void syncAddStaticCount(int value) {
         static_count += value;
     }
 

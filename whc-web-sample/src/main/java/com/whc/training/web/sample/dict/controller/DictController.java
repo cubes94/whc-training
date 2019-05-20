@@ -1,6 +1,7 @@
 package com.whc.training.web.sample.dict.controller;
 
 import com.whc.training.web.sample.config.properties.ApplicationProperties;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @RequestMapping("/dict")
 public class DictController {
 
+    @Getter
     @Autowired
     private ApplicationProperties applicationProperties;
 

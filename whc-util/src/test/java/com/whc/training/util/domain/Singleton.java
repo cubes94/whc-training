@@ -1,4 +1,4 @@
-package com.whc.training.domain.util;
+package com.whc.training.util.domain;
 
 import java.io.Serializable;
 
@@ -24,6 +24,27 @@ public class Singleton implements Serializable {
     }
 
     public Object readResolve() {
+        return instance;
+    }
+}
+
+/**
+ * 懒汉式（线程安全-双重校验锁）
+ */
+class SyncSingleton {
+    private volatile static SyncSingleton instance;
+
+    private SyncSingleton() {
+    }
+
+    public static SyncSingleton getInstance() {
+        if (instance == null) {
+            synchronized (SyncSingleton.class) {
+                if (instance == null) {
+                    instance = new SyncSingleton();
+                }
+            }
+        }
         return instance;
     }
 }

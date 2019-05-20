@@ -1,8 +1,8 @@
-package com.whc.training.test.util;
+package com.whc.training.util.test;
 
 import com.whc.common.constants.FileConstants;
-import com.whc.training.domain.util.Singleton;
-import com.whc.training.domain.util.Student;
+import com.whc.training.util.domain.Singleton;
+import com.whc.training.util.domain.Student;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
@@ -12,8 +12,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.DoubleBinaryOperator;
 
 /**

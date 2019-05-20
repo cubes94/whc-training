@@ -15,4 +15,10 @@ public class UtilTest {
     public void utilTest() {
 
     }
+
+    private void testSync() {
+        synchronized (this) {
+            System.out.println("synchronized");
+        }
+    }
 }
