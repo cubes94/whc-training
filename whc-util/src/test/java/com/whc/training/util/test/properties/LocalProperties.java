@@ -1,4 +1,4 @@
-package com.whc.training.util.properties;
+package com.whc.training.util.test.properties;
 
 import org.springframework.core.io.FileUrlResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;

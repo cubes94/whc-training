@@ -1,15 +1,19 @@
 package com.whc.training.util.test;
 
 import com.alibaba.fastjson.JSON;
-import com.whc.training.util.domain.DelayedCallback;
-import com.whc.training.util.domain.MySignal;
+import com.whc.training.util.analysis.java.util.concurrent.locks.AbstractQueuedSynchronizerAnalysis;
+import com.whc.training.util.analysis.java.util.concurrent.locks.ReentrantLockAnalysis;
+import com.whc.training.util.test.domain.DelayedCallback;
+import com.whc.training.util.test.domain.MySignal;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 并发性测试
@@ -132,6 +136,8 @@ public class ConcurrencyTest {
     }
 
     /**
+     * 测试{@linkplain LockSupport#park()} {@linkplain LockSupport#unpark(Thread)}
+     * <p>
      * {@link LockSupport}
      */
     @Test
@@ -226,13 +232,67 @@ public class ConcurrencyTest {
     }
 
     /**
+     * {@link AbstractQueuedSynchronizerAnalysis} AQS定义了一个锁实现的内部流程，而如何上锁和解锁则在各个子类中实现(模板方法模式)
+     * {@link AbstractQueuedSynchronizerAnalysis#acquire(int)} 不响应中断的独占锁  eg. {@link ReentrantLockAnalysis#lock()}
+     * {@link AbstractQueuedSynchronizerAnalysis#acquireInterruptibly(int)} 响应中断的独占锁 eg. {@link ReentrantLockAnalysis#lockInterruptibly()}
+     * {@link AbstractQueuedSynchronizerAnalysis#acquireShared(int)} 不响应中断的共享锁
+     * {@link AbstractQueuedSynchronizerAnalysis#acquireSharedInterruptibly(int)} 响应中断的共享锁
+     */
+    @Test
+    public void testAQS() throws Exception {
+
+
+    }
+
+    /**
      * 可重入锁：自己可以再次获取自己的内部锁。
+     * 独占锁
      * 相比于synchronized, 增加了以下几点：等待可中断；可实现公平锁(先等待的线程先获得锁)；可实现选择性通知(锁可以绑定多个条件)
      *
-     * @see java.util.concurrent.locks.ReentrantLock
+     * @see ReentrantLock
      */
     @Test
     public void testReenTrantLock() throws Exception {
+        // 非公平锁
+        this.testLockOrder(new ReentrantLock());
+        // 公平锁
+        this.testLockOrder(new ReentrantLock(true));
+    }
+
+    /**
+     * 测试Lock执行顺序
+     *
+     * @param lock 锁
+     */
+    private void testLockOrder(Lock lock) throws Exception {
+        int threads = 20;
+        ExecutorService exe = Executors.newFixedThreadPool(threads);
+        for (int i = 0; i < threads; i++) {
+            final int j = i;
+            exe.execute(() -> {
+                System.out.println("start: " + j);
+                lock.lock();
+                System.out.println("locked: " + j);
+                lock.unlock();
+            });
+        }
+        this.afterTerminated(exe);
+    }
+
+    /**
+     * 读写锁：维护了一对相关的锁(读取锁/写入锁)
+     * 读取锁：用于只读操作，共享锁，能同时被多个线程获取
+     * 写入锁：用于写入操作，独占锁，同时只被一个线程获取
+     * 不能同时存在读取锁和写入锁
+     */
+    @Test
+    public void testReadWriteLock() throws Exception {
+        // ReentrantReadWriteLock
+        // 支持公平锁/非公平锁
+        // 支持可重入。读线程在获取了读锁后还可以获取读锁；写线程在获取写锁后既可以再次获取写锁又可以获取读锁
+        // 允许写锁降级为读锁，实现方式：先获取写锁，再获取读锁，然后释放写锁。但是，从读锁升级到写锁是不允许的
+        // Condition支持。写锁提供了Condition实现，读锁不支持Condition，readLock().newCondition()会抛出UnsupportedOperationException
+
 
     }
 
@@ -502,7 +562,7 @@ public class ConcurrencyTest {
      *
      * @param exe 线程池
      */
-    private void afterTerminated(ExecutorService exe) throws Exception {
+    private void afterTerminated(ExecutorService exe) throws InterruptedException {
         exe.shutdown();
         while (!exe.isTerminated()) {
             Thread.sleep(200);

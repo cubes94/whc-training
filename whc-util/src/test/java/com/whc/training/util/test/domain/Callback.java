@@ -1,4 +1,4 @@
-package com.whc.training.util.domain;
+package com.whc.training.util.test.domain;
 
 /**
  * 回调函数

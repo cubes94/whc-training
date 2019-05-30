@@ -1,8 +1,8 @@
 package com.whc.training.util.test;
 
 import com.whc.common.constants.FileConstants;
-import com.whc.training.util.domain.Singleton;
-import com.whc.training.util.domain.Student;
+import com.whc.training.util.test.domain.Singleton;
+import com.whc.training.util.test.domain.Student;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
