@@ -1,6 +1,10 @@
 package com.whc;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Base64;
 
 /**
  * 工具类测试
@@ -12,13 +16,8 @@ import org.junit.Test;
 public class UtilTest {
 
     @Test
-    public void utilTest() {
-
-    }
-
-    private void testSync() {
-        synchronized (this) {
-            System.out.println("synchronized");
-        }
+    public void utilTest() throws Exception {
+        String s = Base64.getEncoder().encodeToString(FileUtils.readFileToByteArray(new File(
+                "C:\\Users\\wuhaichao\\Desktop\\1.jpg")));
     }
 }
