@@ -23,7 +23,7 @@ public class RPNTest implements TimeCalculator {
     @Test
     public void testRPN() {
         char[] pattern = "a+b*c+(d*e+f)*g+(a*b+c)".toCharArray();
-        timeCalc(this::testRPN, pattern);
+        timeCalc(this::doRPN, pattern);
     }
 
     /**
@@ -33,7 +33,7 @@ public class RPNTest implements TimeCalculator {
      * @param pattern 普通表达式
      * @return 后缀表达式
      */
-    private char[] testRPN(char[] pattern) {
+    private char[] doRPN(char[] pattern) {
         Stack<Character> stack = new Stack<>();
         List<Character> rpnList = new ArrayList<>();
         for (char c : pattern) {

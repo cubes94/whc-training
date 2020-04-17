@@ -17,11 +17,11 @@ public class PowerTest implements TimeCalculator {
     public void testPower() {
         long x = 2;
         int pow = 38;
-        timeCalc(this::testPower, new Object[]{x, pow});
+        timeCalc(this::power, new Object[]{x, pow});
     }
 
-    private long testPower(Object[] params) {
-        return testPower((long) params[0], (int) params[1]);
+    private long power(Object[] params) {
+        return doPower((long) params[0], (int) params[1]);
     }
 
     /**
@@ -32,13 +32,13 @@ public class PowerTest implements TimeCalculator {
      * @param pow 幂
      * @return result
      */
-    public static long testPower(long x, int pow) {
+    public static long doPower(long x, int pow) {
         if (pow == 0) return 1;
         if (pow == 1) return x;
         if (pow % 2 == 0) {
-            return testPower(x * x, pow / 2);
+            return doPower(x * x, pow / 2);
         } else {
-            return testPower(x * x, pow / 2) * x;
+            return doPower(x * x, pow / 2) * x;
         }
     }
 }

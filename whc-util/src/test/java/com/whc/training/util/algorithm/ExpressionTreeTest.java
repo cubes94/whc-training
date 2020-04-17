@@ -37,10 +37,10 @@ public class ExpressionTreeTest implements TimeCalculator {
     @Test
     public void testExpressionTree() {
         char[] rpn = "abc*+de*f+g*+".toCharArray();
-        timeCalc(this::testExpressionTree, rpn);
+        timeCalc(this::expressionTree, rpn);
     }
 
-    private TreeNode<Character> testExpressionTree(char[] rpn) {
+    private TreeNode<Character> expressionTree(char[] rpn) {
         Stack<TreeNode<Character>> stack = new Stack<>();
         for (char c : rpn) {
             if (isSymbol(c)) {

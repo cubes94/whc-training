@@ -27,6 +27,30 @@ public class TreeNode<E> {
         this.element = element;
     }
 
+    public E getElement() {
+        return element;
+    }
+
+    public TreeNode<E> getLeftChild() {
+        return leftChild;
+    }
+
+    public TreeNode<E> getRightChild() {
+        return rightChild;
+    }
+
+    public void setElement(E element) {
+        this.element = element;
+    }
+
+    public void setLeftChild(TreeNode<E> leftChild) {
+        this.leftChild = leftChild;
+    }
+
+    public void setRightChild(TreeNode<E> rightChild) {
+        this.rightChild = rightChild;
+    }
+
     @Override
     public String toString() {
         Map<TreeNode<E>, Point> nodeLevelMap = new HashMap<>();
@@ -45,11 +69,11 @@ public class TreeNode<E> {
             }
         }
         int depth = nodeLevelMap.entrySet().stream().map(e -> e.getValue().y).max((y1, y2) -> y1 - y2).get();
-        int outputX = (int) (PowerTest.testPower(2, depth) * 4 - 3);
+        int outputX = (int) (PowerTest.doPower(2, depth) * 4 - 3);
         int outputY = 2 * depth + 1;
         String[][] output = new String[outputX][outputY];
         for (Map.Entry<TreeNode<E>, Point> entry : nodeLevelMap.entrySet()) {
-            int x = (4 * entry.getValue().x + 2) * ((int) PowerTest.testPower(2, depth - entry.getValue().y)) - 2;
+            int x = (4 * entry.getValue().x + 2) * ((int) PowerTest.doPower(2, depth - entry.getValue().y)) - 2;
             int y = 2 * entry.getValue().y;
             output[x][y] = entry.getKey().element.toString();
             if (entry.getValue().y != 0) {

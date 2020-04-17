@@ -16,11 +16,11 @@ public class GreatestCommonDivisorTest implements TimeCalculator {
     @Test
     public void testGcd() {
         long[] params = {24, 21};
-        timeCalc(this::testGcd, params);
+        timeCalc(this::gcd, params);
     }
 
-    private long testGcd(long[] params) {
-        return testGcd(params[0], params[1]);
+    private long gcd(long[] params) {
+        return doGcd(params[0], params[1]);
     }
 
     /**
@@ -31,7 +31,7 @@ public class GreatestCommonDivisorTest implements TimeCalculator {
      * @param b b
      * @return result
      */
-    private long testGcd(long a, long b) {
+    private long doGcd(long a, long b) {
         if (a < b) {
             long c = a;
             a = b;

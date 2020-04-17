@@ -34,7 +34,7 @@ public class MaxSumOfSubArrayTest implements TimeCalculator {
      * @return result
      */
     private int testDivideAndConquer(int[] array) {
-        return testDivideAndConquer(array, 0, array.length - 1);
+        return doDivideAndConquer(array, 0, array.length - 1);
     }
 
     /**
@@ -56,14 +56,14 @@ public class MaxSumOfSubArrayTest implements TimeCalculator {
      * @param rgt   rgt
      * @return result
      */
-    private int testDivideAndConquer(int[] array, int lft, int rgt) {
+    private int doDivideAndConquer(int[] array, int lft, int rgt) {
         if (lft == rgt) {
-            return array[lft] > 0 ? array[lft] : 0;
+            return Math.max(array[lft], 0);
         }
         // 递归获取拆分后的子序列最大和
         int center = (lft + rgt) / 2;
-        int maxLeftSum = testDivideAndConquer(array, lft, center);
-        int maxRightSum = testDivideAndConquer(array, center + 1, rgt);
+        int maxLeftSum = doDivideAndConquer(array, lft, center);
+        int maxRightSum = doDivideAndConquer(array, center + 1, rgt);
         // 判断最大和的子序列的元素是否处于拆分后的两个子序列中
         int maxLeftBorderSum = 0, leftBorderSum = 0;
         for (int i = center; i >= lft; i--) {

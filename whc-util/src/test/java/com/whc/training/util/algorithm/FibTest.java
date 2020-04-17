@@ -54,7 +54,7 @@ public class FibTest implements TimeCalculator {
         long[] array = new long[n + 1];
         array[0] = 1;
         array[1] = 1;
-        return recursionUseCache(n, array);
+        return doRecursionUseCache(n, array);
     }
 
     /**
@@ -64,9 +64,9 @@ public class FibTest implements TimeCalculator {
      * @param array 缓存数据
      * @return fib(n)
      */
-    private long recursionUseCache(int n, long[] array) {
+    private long doRecursionUseCache(int n, long[] array) {
         if (array[n] == 0) {
-            array[n] = recursionUseCache(n - 1, array) + recursionUseCache(n - 2, array);
+            array[n] = doRecursionUseCache(n - 1, array) + doRecursionUseCache(n - 2, array);
         }
         return array[n];
     }
