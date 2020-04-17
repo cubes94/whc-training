@@ -1,4 +1,4 @@
-package com.whc.training.domain.util;
+package com.whc.training.util.test.domain;
 
 /**
  * 共享对象

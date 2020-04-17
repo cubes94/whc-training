@@ -55,9 +55,20 @@
         </dependency>
 
         <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.andrewoma.dexx</groupId>
+            <artifactId>dexx-collections</artifactId>
+            <version>0.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

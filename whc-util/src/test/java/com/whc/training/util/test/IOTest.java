@@ -1,4 +1,4 @@
-package com.whc.training.test.util;
+package com.whc.training.util.test;
 
 import com.alibaba.fastjson.JSON;
 import com.whc.common.constants.CharsetConstants;

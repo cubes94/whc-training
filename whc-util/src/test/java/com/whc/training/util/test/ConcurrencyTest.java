@@ -1,13 +1,19 @@
-package com.whc.training.test.util;
+package com.whc.training.util.test;
 
 import com.alibaba.fastjson.JSON;
-import com.whc.training.domain.util.MySignal;
+import com.whc.training.util.analysis.java.util.concurrent.locks.AbstractQueuedSynchronizerAnalysis;
+import com.whc.training.util.analysis.java.util.concurrent.locks.ReentrantLockAnalysis;
+import com.whc.training.util.test.domain.DelayedCallback;
+import com.whc.training.util.test.domain.MySignal;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 并发性测试
@@ -18,6 +24,10 @@ import java.util.concurrent.*;
  */
 @Slf4j
 public class ConcurrencyTest {
+
+    private static List<String> flagList = new CopyOnWriteArrayList<>();
+
+    private static DelayQueue<DelayedCallback> callbackDelayQueue = new DelayQueue<>();
 
     /**
      * 基本测试
@@ -110,7 +120,8 @@ public class ConcurrencyTest {
     }
 
     /**
-     * 同步关键字
+     * 同步关键字 synchronized
+     * 依赖于JVM实现、可重入锁、非公平锁、悲观锁
      */
     @Test
     public void testSynchronized() throws Exception {
@@ -122,6 +133,167 @@ public class ConcurrencyTest {
         this.syncAddCount1(1);
         // 静态方法中的同步块 <=> 等价于addStaticCount
         syncAddStaticCount1(1);
+    }
+
+    /**
+     * 测试{@linkplain LockSupport#park()} {@linkplain LockSupport#unpark(Thread)}
+     * <p>
+     * {@link LockSupport}
+     */
+    @Test
+    public void testLockSupport() throws Exception {
+        // 延时队列
+        new Thread(() -> {
+            try {
+                while (true) {
+                    callbackDelayQueue.take().getCallback().apply();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        Thread t1 = new Thread(() -> {
+            // 设置线程中断
+            // 线程不会停止, 只是线程的中断标志被设置为true, 中断后再调用wait, join, sleep时, 会抛出InterruptedException, 并且中断标志重新设置为false
+            Thread.currentThread().interrupt();
+            log.info("t1: interrupted? {}", Thread.currentThread().isInterrupted());
+            // 返回中断标志, 并清除中断标志, 重设为false
+            boolean oldInterrupted = Thread.interrupted();
+            log.info("t1: oldInterrupted? {}", oldInterrupted);
+            log.info("t1: interrupted? {}", Thread.currentThread().isInterrupted());
+        });
+        t1.start();
+
+        // 一次中断操作后无论线程调用多少次LockSupport.park(), 程序都不会挂起, 而是正常运行
+        // park源码内判断了当前线程中断标志是true时不会进行操作
+        Thread t2 = new Thread(() -> {
+            while (!flagList.contains("testLockSupport_t2")) {
+            }
+            LockSupport.park();
+            log.info("t2: after 1st park");
+            LockSupport.park();
+            log.info("t2: after 2nd park");
+        });
+        callbackDelayQueue.add(new DelayedCallback(() -> {
+            t2.start();
+            t2.interrupt();
+            flagList.add("testLockSupport_t2");
+        }, 100));
+
+        // 多次调用unpark只会提供一个许可
+        // unpark源码只会修改标志位为1，不会递增
+        Thread t3 = new Thread(() -> {
+            while (!flagList.contains("testLockSupport_t3")) {
+            }
+            LockSupport.park();
+            log.info("t3: after 1st park");
+            LockSupport.park();
+            log.info("t3: after 2nd park");
+        });
+        callbackDelayQueue.add(new DelayedCallback(() -> {
+            t3.start();
+            LockSupport.unpark(t3);
+            LockSupport.unpark(t3);
+            flagList.add("testLockSupport_t3");
+        }, 200));
+
+        // interrupt源码内部会调用一次unpark, 所以之后执行的第一个park操作会修改标志位1->0
+        // 如果清除了中断标志, 第二个park操作才会进行阻塞(见t5)
+        Thread t4 = new Thread(() -> {
+            while (!flagList.contains("testLockSupport_t4")) {
+            }
+            log.info("t4: oldInterrupted? {}", Thread.interrupted());
+            LockSupport.park();
+            log.info("t4: after 1st park");
+        });
+        callbackDelayQueue.add(new DelayedCallback(() -> {
+            t4.start();
+            t4.interrupt();
+            flagList.add("testLockSupport_t4");
+        }, 300));
+
+        // 中断标志清除后, LockSupport.park()把程序挂起
+        Thread t5 = new Thread(() -> {
+            while (!flagList.contains("testLockSupport_t5")) {
+            }
+            LockSupport.park();
+            log.info("t5: after 1st park");
+            log.info("t5: oldInterrupted? {}", Thread.interrupted());
+            LockSupport.park();
+            log.info("t5: after 2nd park");
+        });
+        callbackDelayQueue.add(new DelayedCallback(() -> {
+            t5.start();
+            t5.interrupt();
+            flagList.add("testLockSupport_t5");
+        }, 400));
+        Thread.sleep(2000);
+    }
+
+    /**
+     * {@link AbstractQueuedSynchronizerAnalysis} AQS定义了一个锁实现的内部流程，而如何上锁和解锁则在各个子类中实现(模板方法模式)
+     * {@link AbstractQueuedSynchronizerAnalysis#acquire(int)} 不响应中断的独占锁  eg. {@link ReentrantLockAnalysis#lock()}
+     * {@link AbstractQueuedSynchronizerAnalysis#acquireInterruptibly(int)} 响应中断的独占锁 eg. {@link ReentrantLockAnalysis#lockInterruptibly()}
+     * {@link AbstractQueuedSynchronizerAnalysis#acquireShared(int)} 不响应中断的共享锁
+     * {@link AbstractQueuedSynchronizerAnalysis#acquireSharedInterruptibly(int)} 响应中断的共享锁
+     */
+    @Test
+    public void testAQS() throws Exception {
+
+
+    }
+
+    /**
+     * 可重入锁：自己可以再次获取自己的内部锁。
+     * 独占锁
+     * 相比于synchronized, 增加了以下几点：等待可中断；可实现公平锁(先等待的线程先获得锁)；可实现选择性通知(锁可以绑定多个条件)
+     *
+     * @see ReentrantLock
+     */
+    @Test
+    public void testReenTrantLock() throws Exception {
+        // 非公平锁
+        this.testLockOrder(new ReentrantLock());
+        // 公平锁
+        this.testLockOrder(new ReentrantLock(true));
+    }
+
+    /**
+     * 测试Lock执行顺序
+     *
+     * @param lock 锁
+     */
+    private void testLockOrder(Lock lock) throws Exception {
+        int threads = 20;
+        ExecutorService exe = Executors.newFixedThreadPool(threads);
+        for (int i = 0; i < threads; i++) {
+            final int j = i;
+            exe.execute(() -> {
+                System.out.println("start: " + j);
+                lock.lock();
+                System.out.println("locked: " + j);
+                lock.unlock();
+            });
+        }
+        this.afterTerminated(exe);
+    }
+
+    /**
+     * 读写锁：维护了一对相关的锁(读取锁/写入锁)
+     * 读取锁：用于只读操作，共享锁，能同时被多个线程获取
+     * 写入锁：用于写入操作，独占锁，同时只被一个线程获取
+     * 不能同时存在读取锁和写入锁
+     */
+    @Test
+    public void testReadWriteLock() throws Exception {
+        // ReentrantReadWriteLock
+        // 支持公平锁/非公平锁
+        // 支持可重入。读线程在获取了读锁后还可以获取读锁；写线程在获取写锁后既可以再次获取写锁又可以获取读锁
+        // 允许写锁降级为读锁，实现方式：先获取写锁，再获取读锁，然后释放写锁。但是，从读锁升级到写锁是不允许的
+        // Condition支持。写锁提供了Condition实现，读锁不支持Condition，readLock().newCondition()会抛出UnsupportedOperationException
+
+
     }
 
     /**
@@ -172,34 +344,41 @@ public class ConcurrencyTest {
 
         // 生产者
         exe.execute(() -> {
-            synchronized (list) {
-                // 为防止假唤醒，不用if用while，这样的while循环叫做自旋锁（长时间不调用notify方法会十分消耗CPU）
-                while (!list.isEmpty()) {
-                    try {
-                        list.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+            while (this.count < 1000) {
+                synchronized (list) {
+                    // 为防止假唤醒，不用if用while，这样的while循环叫做自旋锁（长时间不调用notify方法会十分消耗CPU）
+                    while (!list.isEmpty()) {
+                        try {
+                            // 调用wait()方法，线程会放弃对象锁，进入等待此对象的等待锁定池
+                            list.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
+                    this.syncAddCount(1);
+                    list.add(this.count);
+                    log.info("生产：{}，集合：{}", this.count, JSON.toJSON(list));
+                    list.notify();
                 }
-                this.syncAddCount(1);
-                list.add(this.count);
-                log.info("生产：{}，集合：{}", this.count, JSON.toJSON(list));
-                list.notify();
             }
         });
         // 消费者
         exe.execute(() -> {
-            synchronized (list) {
-                while (list.isEmpty()) {
-                    try {
-                        list.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+            while (this.count < 1000) {
+                synchronized (list) {
+                    while (list.isEmpty()) {
+                        try {
+                            list.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
+                    while (!list.isEmpty()) {
+                        Integer custom = list.remove(0);
+                        log.info("消费：{}，集合：{}", custom, JSON.toJSON(list));
+                    }
+                    list.notify();
                 }
-                Integer custom = list.remove(0);
-                log.info("消费：{}，集合：{}", custom, JSON.toJSON(list));
-                list.notify();
             }
         });
         this.afterTerminated(exe);
@@ -362,7 +541,7 @@ public class ConcurrencyTest {
         this.count += value;
     }
 
-    private synchronized void syncAddStaticCount(int value) {
+    private static synchronized void syncAddStaticCount(int value) {
         static_count += value;
     }
 
@@ -383,7 +562,7 @@ public class ConcurrencyTest {
      *
      * @param exe 线程池
      */
-    private void afterTerminated(ExecutorService exe) throws Exception {
+    private void afterTerminated(ExecutorService exe) throws InterruptedException {
         exe.shutdown();
         while (!exe.isTerminated()) {
             Thread.sleep(200);

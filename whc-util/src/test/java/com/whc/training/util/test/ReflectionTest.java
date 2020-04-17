@@ -1,4 +1,4 @@
-package com.whc.training.test.util;
+package com.whc.training.util.test;
 
 import com.whc.util.response.Response;
 import lombok.Data;
@@ -49,8 +49,9 @@ public class ReflectionTest {
      * 构造器
      */
     @Test
+    @SuppressWarnings("unchecked")
     public void testConstructor() throws Exception {
-        Constructor constructor = MyClass.class.getConstructor(new Class[]{ReflectionTest.class, String.class, Integer.class});
+        Constructor constructor = MyClass.class.getConstructor(ReflectionTest.class, String.class, Integer.class);
         MyClass myClass = (MyClass) constructor.newInstance(this, "", Integer.MAX_VALUE);
         log.info("通过构造器获取实体：{}", myClass);
     }
@@ -74,6 +75,7 @@ public class ReflectionTest {
      * 方法
      */
     @Test
+    @SuppressWarnings("unchecked")
     public void testMethod() throws Exception {
         Class myClass = MyClass.class;
         Method setString = myClass.getMethod("setString", String.class);
@@ -157,7 +159,6 @@ public class ReflectionTest {
     private class MyObject implements Serializable {
 
         private static final long serialVersionUID = -7706923668056417351L;
-
 
     }
 
