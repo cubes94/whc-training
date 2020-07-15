@@ -1,6 +1,5 @@
 package com.whc.training.service.dict.service;
 
-import com.google.common.collect.Maps;
 import com.whc.training.api.dict.domain.vo.DictAreaChildVO;
 import com.whc.training.api.dict.service.IDictService;
 import com.whc.training.api.util.enums.DictAreaEnum;
@@ -13,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -63,14 +63,14 @@ public class DictServiceImpl implements IDictService {
             return Response.fail("参数有误");
         }
         // 当前处理信息
-        Map<String, DictAreaChildVO> codeDictAreaChildMap = Maps.newHashMap();
+        Map<String, DictAreaChildVO> codeDictAreaChildMap = new HashMap<>();
         codeDictAreaChildMap.put(dictAreaChildVO.getCode(), dictAreaChildVO);
         // 补充子节点数据
         while (level != null && DictAreaEnum.Level.DISTRICT.lowerThan(level) && !codeDictAreaChildMap.isEmpty()) {
             QueryDictAreaDTO queryDictAreaDTO = new QueryDictAreaDTO();
             queryDictAreaDTO.setParentCodeList(new ArrayList<>(codeDictAreaChildMap.keySet()));
             List<DictAreaVO> dictAreaList = dictCommonService.listDictArea(queryDictAreaDTO);
-            Map<String, DictAreaChildVO> codeDictAreaChildTempMap = Maps.newHashMap();
+            Map<String, DictAreaChildVO> codeDictAreaChildTempMap = new HashMap<>();
             for (DictAreaVO dictArea : dictAreaList) {
                 DictAreaChildVO dictAreaChild = ModelConvertUtils.convertToDictAreaChildVO(dictArea);
                 codeDictAreaChildMap.get(dictArea.getParentCode()).getDictAreaChildList().add(dictAreaChild);

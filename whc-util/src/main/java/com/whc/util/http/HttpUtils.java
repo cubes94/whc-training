@@ -1,6 +1,6 @@
 package com.whc.util.http;
 
-import org.springframework.util.StreamUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,6 +43,6 @@ public class HttpUtils {
      */
     public static byte[] getFileBytesByUrl(String policyUrl) throws IOException {
         InputStream inputStream = getFileInputStreamByUrl(policyUrl);
-        return StreamUtils.copyToByteArray(inputStream);
+        return IOUtils.toByteArray(inputStream);
     }
 }

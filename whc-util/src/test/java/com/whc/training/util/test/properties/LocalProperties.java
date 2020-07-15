@@ -1,8 +1,6 @@
 package com.whc.training.util.test.properties;
 
-import org.springframework.core.io.FileUrlResource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
-
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -17,12 +15,12 @@ public class LocalProperties extends Properties {
 
     private static final long serialVersionUID = -3998931695315409733L;
 
-    private static LocalProperties localProperties = new LocalProperties();
+    private static LocalProperties LOCAL_PROPERTIES = new LocalProperties();
 
     static {
         String localPath = "/data/whc/whc-training/local.properties";
         try {
-            PropertiesLoaderUtils.fillProperties(localProperties, new FileUrlResource(localPath));
+            LOCAL_PROPERTIES.load(new FileInputStream(localPath));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -32,6 +30,6 @@ public class LocalProperties extends Properties {
     }
 
     public static LocalProperties getLocalProperties() {
-        return localProperties;
+        return LOCAL_PROPERTIES;
     }
 }

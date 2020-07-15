@@ -1,6 +1,5 @@
 package com.whc.util.response;
 
-import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -17,19 +16,29 @@ public class Response<T> implements Serializable {
 
     private static final long serialVersionUID = -2113844745886695952L;
 
-    @ApiModelProperty(value = "成功标志", required = true)
+    /**
+     * 成功标志
+     */
     private static final String SUCCESS_CODE = "1";
 
-    @ApiModelProperty(value = "失败标志", required = true)
+    /**
+     * 失败标志
+     */
     private static final String FAIL_CODE = "0";
 
-    @ApiModelProperty(value = "标志码1:成功,0:失败", required = true)
+    /**
+     * 标志码1:成功,0:失败
+     */
     private String code;
 
-    @ApiModelProperty(value = "说明", required = true)
+    /**
+     * 说明
+     */
     private String message;
 
-    @ApiModelProperty(value = "数据", required = true)
+    /**
+     * 数据
+     */
     private T data;
 
     /**

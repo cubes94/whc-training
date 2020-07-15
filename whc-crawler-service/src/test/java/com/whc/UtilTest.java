@@ -1,6 +1,5 @@
 package com.whc;
 
-import com.google.common.collect.Maps;
 import com.whc.util.http.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
@@ -12,10 +11,7 @@ import us.codecraft.webmagic.processor.PageProcessor;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -47,7 +43,7 @@ public class UtilTest {
                 page.getHtml().xpath("//img").nodes().forEach(node -> {
                     String link = node.xpath("//img//@src").toString();
                     if (link.endsWith(".webp")) {
-                        Map<String, String> img = Maps.newHashMap();
+                        Map<String, String> img = new HashMap<>();
                         img.put("link", link);
                         img.put("name", link.split("/")[link.split("/").length - 1]);
                         imgs.add(img);

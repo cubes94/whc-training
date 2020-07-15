@@ -5,8 +5,8 @@ import com.whc.training.service.dict.domain.dto.QueryDictAreaBaseDTO;
 import com.whc.training.service.dict.domain.dto.QueryDictAreaDTO;
 import com.whc.training.service.dict.domain.vo.DictAreaVO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +24,9 @@ public class DictCommonServiceImpl {
 
     @Autowired
     private DictAreaMapper dictAreaMapper;
+
+    @Autowired
+    private SqlSessionFactory sqlSessionFactory;
 
 
     /**
@@ -43,7 +46,8 @@ public class DictCommonServiceImpl {
      * @return 查询结果
      */
     public List<DictAreaVO> listDictArea(QueryDictAreaDTO queryDictAreaDTO) {
-        return dictAreaMapper.listDictArea(new QueryDictAreaBaseDTO(queryDictAreaDTO));
+        return sqlSessionFactory.openSession().getMapper(DictAreaMapper.class).listDictArea(new QueryDictAreaBaseDTO(queryDictAreaDTO));
+//        return dictAreaMapper.listDictArea(new QueryDictAreaBaseDTO(queryDictAreaDTO));
     }
 
     /**
@@ -58,9 +62,4 @@ public class DictCommonServiceImpl {
         return this.listDictArea(queryDictAreaDTO);
     }
 
-    @Retryable(value = Exception.class, maxAttempts = 10)
-    public Integer getI() {
-        System.out.println("----------------------------");
-        throw new RuntimeException("1");
-    }
 }

@@ -1,18 +1,18 @@
 package com.whc.training.util.test;
 
 import com.alibaba.fastjson.JSON;
-import com.whc.common.constants.CharsetConstants;
 import com.whc.common.constants.Constants;
 import com.whc.common.constants.FileConstants;
 import com.whc.util.response.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
-import org.springframework.util.StreamUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -24,6 +24,8 @@ import java.util.*;
  */
 @Slf4j
 public class IOTest {
+
+    private static final Charset GBK = Charset.forName("GBK");
 
     /**
      * 删除测试文件
@@ -58,7 +60,7 @@ public class IOTest {
                 byte[] buffer = new byte[1024];
                 StringBuilder sb = new StringBuilder();
                 while ((count = inputStream.read(buffer)) != -1) {
-                    sb.append(new String(buffer, 0, count, CharsetConstants.UTF8));
+                    sb.append(new String(buffer, 0, count, StandardCharsets.UTF_8));
                 }
                 inputStream.close();
                 log.info("读取数据：{}", sb);
@@ -107,7 +109,7 @@ public class IOTest {
     @Test
     public void testNetworking() throws Exception {
         InputStream inputStream = new FileInputStream(createFile(FileConstants.FILE_EXT_TXT, DEFAULT_DATA));
-        String content = StreamUtils.copyToString(inputStream, Charset.forName(CharsetConstants.UTF8));
+        String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         log.info("content: {}", content);
     }
 
@@ -133,7 +135,7 @@ public class IOTest {
         inputStream.close();
         log.info("读取字节数组：{}", JSON.toJSONString(byteList.toArray()));
         // 读取字符数组
-        char[] chars = FileUtils.readFileToString(txtFile, CharsetConstants.UTF8).toCharArray();
+        char[] chars = FileUtils.readFileToString(txtFile, StandardCharsets.UTF_8).toCharArray();
         Reader reader = new CharArrayReader(chars);
         List<Character> charList = new ArrayList<>();
         StringBuilder charSb = new StringBuilder();
@@ -230,7 +232,7 @@ public class IOTest {
         byte[] buffer = new byte[1024];
         int count;
         while ((count = randomAccessFile.read(buffer)) != -1) {
-            sb.append(new String(buffer, 0, count, CharsetConstants.UTF8));
+            sb.append(new String(buffer, 0, count, StandardCharsets.UTF_8));
         }
         log.info("读取数据：{}", sb);
         randomAccessFile.close();
@@ -268,12 +270,12 @@ public class IOTest {
         File txtFile = createFile(FileConstants.FILE_EXT_TXT);
 
         OutputStream outputStream = new FileOutputStream(txtFile);
-        Writer writer = new OutputStreamWriter(outputStream, CharsetConstants.UTF8);
+        Writer writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
         writer.write(DEFAULT_DATA);
         writer.close();
 
         InputStream inputStream = new FileInputStream(txtFile);
-        Reader reader = new InputStreamReader(inputStream, CharsetConstants.UTF8);
+        Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
         int data;
         StringBuilder sb = new StringBuilder();
         while ((data = reader.read()) != -1) {
@@ -315,7 +317,7 @@ public class IOTest {
      */
     @Test
     public void testPushback() throws Exception {
-        File txtFile = createFile(FileConstants.FILE_EXT_TXT, DEFAULT_DATA, CharsetConstants.GBK);
+        File txtFile = createFile(FileConstants.FILE_EXT_TXT, DEFAULT_DATA, GBK);
 
         // 可以设置推回缓冲区的大小，下面例子设置了8个字节的缓冲区
         int preDataLength = 8;
@@ -323,11 +325,11 @@ public class IOTest {
         byte[] bytes = new byte[preDataLength];
         int count = inputStream.read(bytes);
         if (count != -1) {
-            String preDataStr = new String(bytes, 0, count, CharsetConstants.GBK);
+            String preDataStr = new String(bytes, 0, count, GBK);
             log.info("预读数据：{}", preDataStr);
             inputStream.unread(bytes);
         }
-        log.info("读取数据：{}", StreamUtils.copyToString(inputStream, Charset.forName(CharsetConstants.GBK)));
+        log.info("读取数据：{}", IOUtils.toString(inputStream, GBK));
         inputStream.close();
 
         // 8个字符的缓冲区
@@ -354,7 +356,7 @@ public class IOTest {
      */
     @Test
     public void testPrint() throws Exception {
-        File txtFile = createFile(FileConstants.FILE_EXT_TXT, DEFAULT_DATA, CharsetConstants.GBK);
+        File txtFile = createFile(FileConstants.FILE_EXT_TXT, DEFAULT_DATA, GBK);
 
         OutputStream outputStream = new FileOutputStream(txtFile, true);
         PrintStream printStream = new PrintStream(outputStream);
@@ -378,14 +380,14 @@ public class IOTest {
      */
     @Test
     public void testOtherStream() throws Exception {
-        File txtFile = createFile(FileConstants.FILE_EXT_TXT, DEFAULT_DATA, CharsetConstants.GBK);
+        File txtFile = createFile(FileConstants.FILE_EXT_TXT, DEFAULT_DATA, GBK);
         File xlsFile = createFile(FileConstants.FILE_EXT_XLS, StringUtils.reverse(DEFAULT_DATA));
 
         // SequenceInputStream把一个或者多个InputStream整合起来，形成一个逻辑连贯的输入流。
         InputStream inputStream1 = new FileInputStream(txtFile);
         InputStream inputStream2 = new FileInputStream(xlsFile);
         InputStream combinedInputStream = new SequenceInputStream(inputStream1, inputStream2);
-        log.info("读取数据：{}", StreamUtils.copyToString(combinedInputStream, Charset.forName(CharsetConstants.UTF8)));
+        log.info("读取数据：{}", IOUtils.toString(combinedInputStream, StandardCharsets.UTF_8));
         combinedInputStream.close();
     }
 
@@ -458,10 +460,10 @@ public class IOTest {
     }
 
     protected static File createFile(String fileExt, String content) throws Exception {
-        return createFile(fileExt, content, CharsetConstants.UTF8);
+        return createFile(fileExt, content, StandardCharsets.UTF_8);
     }
 
-    protected static File createFile(String fileExt, String content, String charset) throws Exception {
+    protected static File createFile(String fileExt, String content, Charset charset) throws Exception {
         String pathname = path + File.separator + DEFAULT_FILE_NAME + fileExt;
         File file = new File(pathname);
         if (!file.exists()) {

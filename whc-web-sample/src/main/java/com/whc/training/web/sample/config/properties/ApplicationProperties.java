@@ -54,7 +54,7 @@ public class ApplicationProperties {
      * 注入网站资源
      */
     @Getter
-    @Value("https://blog.whcubes.com")
+    @Value("http://whcubes.com/")
     private Resource blogUrl;
 
     /**
