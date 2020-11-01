@@ -121,16 +121,15 @@ public class ReflectionTest {
      */
     @Test
     public void testDynamicProxy() throws Exception {
+
         MyInvocationHandler myInvocationHandler = new MyInvocationHandler();
         MyInterface proxy = (MyInterface) myInvocationHandler.bind(new MyClass());
-        Response response = proxy.doSomething(String.CASE_INSENSITIVE_ORDER);
+        Response<?> response = proxy.doSomething(String.CASE_INSENSITIVE_ORDER);
         log.info("动态代理：{}", response);
     }
 
 
-
-
-    private class MyInvocationHandler implements InvocationHandler {
+    private static class MyInvocationHandler implements InvocationHandler {
 
         private Object target;
 
@@ -156,7 +155,7 @@ public class ReflectionTest {
         String value();
     }
 
-    private class MyObject implements Serializable {
+    private static class MyObject implements Serializable {
 
         private static final long serialVersionUID = -7706923668056417351L;
 
@@ -164,13 +163,13 @@ public class ReflectionTest {
 
     private interface MyInterface {
 
-        Response doSomething(Object param);
+        Response<?> doSomething(Object param);
     }
 
     @MyAnnotation(name = "name", value = "value")
     @Data
     @EqualsAndHashCode(callSuper = true)
-    private class MyClass extends MyObject implements MyInterface {
+    private static class MyClass extends MyObject implements MyInterface {
 
         private static final long serialVersionUID = 3989786430981146549L;
 
@@ -196,7 +195,7 @@ public class ReflectionTest {
         }
 
         @Override
-        public Response doSomething(Object param) {
+        public Response<?> doSomething(Object param) {
             return Response.ok(param);
         }
     }
